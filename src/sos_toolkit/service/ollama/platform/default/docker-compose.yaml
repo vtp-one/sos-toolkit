@@ -1,0 +1,30 @@
+networks:
+  ollama_serve:
+    external: True
+
+services:
+  serve:
+    image: ${IMAGE_TAG}
+    pull_policy: never
+    hostname: ${SYSTEM_NAME}
+
+    networks:
+      - ${OLLAMA_NETWORK}
+
+    ports:
+      - ${OLLAMA_PORT}:${OLLAMA_PORT}
+
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST}:${OLLAMA_PORT}
+      - OLLAMA_MODELS=/opt/ollama-data
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS}
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL}
+      - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE}
+      - OLLAMA_NOPRUNE=${OLLAMA_NOPRUNE}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE}
+      - OLLAMA_LLAMA_EXTRA_ARGS=${OLLAMA_LLAMA_EXTRA_ARGS}
+
+    volumes:
+      - ${OLLAMA_DATA_PATH}:/opt/ollama-data
+
+    command: ["ollama", "serve"]

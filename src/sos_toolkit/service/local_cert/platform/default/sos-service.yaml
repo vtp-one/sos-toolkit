@@ -1,0 +1,75 @@
+meta:
+  sos_version: v0.0.1
+  system_name: local_cert
+  system_version: v0.0.1
+  system_internal: service/local_cert
+  platform: default
+
+namespace:
+  image_file: null
+  image_tag: null
+  setup: False
+
+  valid_image_condition:
+    label: check valid image targets
+    tool: context.ctx_flag
+    params:
+      condition:
+        - label: valid image_file
+          ctx_key: service.local_cert.namespace.image_file
+          valid: null
+          is_inverse: True
+          raise_exc: False
+        - label: valid image_tag
+          ctx_key: service.local_cert.namespace.image_tag
+          valid: null
+          is_inverse: True
+          raise_exc: False
+      raise_exc: True
+
+action:
+  setup:
+    valid_image_condition: ${service.local_cert.namespace.valid_image_condition}
+
+    image_exists:
+      label: local_cert image exists
+      tool: docker.image_exists
+      context_map:
+        - label: get image tag
+          result: target
+          data: service.local_cert.namespace.image_tag
+      result_map:
+        - label: set image exists result
+          result: service.local_cert.namespace.setup
+          data: result
+
+    break:
+      tool: context.runtime_break
+      params:
+        info_pass: LOCAL_CERT_SETUP BUILDER RUNNING
+        info_break: LOCAL_CERT_SETUP BUILDER SKIPPED
+        resolve:
+          - label: if local_cert setup
+            ctx_key: service.local_cert.namespace.setup
+            valid: True
+            comparison: equal
+            raise_exc: False
+        qualifier: all
+
+    docker_load:
+      label: local_cert docker load
+      tool: docker.image_load
+      params:
+        source: file
+      context_map:
+        - label: get image file
+          result: target
+          data: service.local_cert.namespace.image_file
+
+    setup_complete:
+      label: local_cert setup_complete
+      tool: context.ctx_set
+      params:
+        obj: True
+        ctx_key: service.local_cert.namespace.setup
+        overwrite: True

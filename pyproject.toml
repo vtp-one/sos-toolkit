@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sos-toolkit"
+dynamic = ["version"]
+description = "Develop, package, and distribute local Digital Intelligence."
+readme = "README.md"
+requires-python = ">=3.10"
+license-files = { paths = ["LICENSE.txt"] }
+keywords = []
+authors = [
+  { name = "jk", email = "jk@vtp.one" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+]
+
+dependencies = [
+  "typer[all] == 0.12.5",
+  "rich == 13.8.0",
+  "omegaconf == 2.3.0",
+  "python-forge == 18.6.0",
+  "plumbum == 1.8.3",
+  "gitpython == 3.1.43",
+  "python-on-whales == 0.72.0",
+  "pydantic == 2.9.0",
+  "ollama == 0.3.2",
+  "chromadb == 0.5.5",
+  "pymongo == 4.8.0",
+  "ipython == 8.27.0",
+  "getchlib == 1.1.1"
+]
+
+[project.scripts]
+sos-toolkit = "sos_toolkit.cli:cli_app"
+sos = "sos_toolkit.cli:sos_placeholder"
+
+[tool.hatch.version]
+path = "src/sos_toolkit/__about__.py"

@@ -1,0 +1,22 @@
+networks:
+  chromadb_serve:
+    external: True
+
+services:
+  serve:
+    image: ${IMAGE_TAG}
+    pull_policy: never
+    hostname: ${SYSTEM_NAME}
+
+    networks:
+      - ${CHROMADB_NETWORK}
+
+    ports:
+      - ${CHROMADB_PORT}:${CHROMADB_PORT}
+
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=False
+
+    volumes:
+      - ${CHROMADB_DATA_PATH}:/chroma/chroma

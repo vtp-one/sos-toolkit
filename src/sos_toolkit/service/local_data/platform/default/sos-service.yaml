@@ -1,0 +1,111 @@
+meta:
+  sos_version: v0.0.1
+  system_name: local_data
+  system_version: v0.0.1
+  system_internal: service/local_data
+  platform: default
+
+namespace:
+  target: local_data
+  child_map: null
+  path: null
+
+action:
+  setup:
+    create_dir:
+      label: local_data create_child
+      tool: filesystem.directory_create
+      params:
+        exist_ok: True
+      context_map:
+        - label: local target
+          result: target
+          data:
+            - target: system_internal
+              source: meta.system_internal
+            - target: local_target
+              source: service.local_data.namespace.target
+          path_join: True
+      result_map:
+        - result: service.local_data.namespace.path
+          data: path
+
+  create_child:
+    label: local_data create_child
+    tool: filesystem.directory_create
+    params:
+      exist_ok: True
+    context_map:
+      - label: child target
+        result: target
+        data:
+          - target: local_data_path
+            source: service.local_data.namespace.path
+          - target: target
+            source: __TARGET__.folder
+        path_join: True
+    result_map:
+      - result: __RESULT__
+        data: path
+    callbacks:
+      - label: map child_map name to __RESULT__ path
+        tool: context.ctx_set
+        params:
+          overwrite: True
+        context_map:
+          - label: child_map target
+            result: ctx_key
+            data:
+              - target: target
+                source: __TARGET__.name
+            format_string: "service.local_data.namespace.child_map.{target}"
+          - label: child path
+            result: obj
+            data: __RESULT__
+
+  remove_target:
+    child_path:
+      label: get target child path
+      tool: context.ctx_get
+      context_map:
+        - label: generate object target
+          result: target
+          data:
+            - target: target
+              source: __TARGET__
+          format_string: "service.local_data.namespace.child_map.{target}"
+      result_map:
+        - result: obj
+          data: __TARGET__
+
+    remove_child:
+      label: remove child path
+      tool: filesystem.directory_delete
+      params:
+        ignore_errors: True
+      context_map:
+        - label: get child path
+          result: target
+          data: __TARGET__
+      condition:
+        - label: path exists
+          ctx_key: __TARGET__
+          valid: null
+          is_inverse: True
+          raise_exc: False
+
+  clean:
+    label: remove local_data directory
+    tool: filesystem.directory_delete
+    params:
+      ignore_errors: False
+    context_map:
+      - label: get local_data path
+        result: target
+        data: service.local_data.namespace.path
+    condition:
+      - label: local_data path set
+        ctx_key: service.local_data.namespace.path
+        valid: null
+        is_inverse: True
+        raise_exc: False

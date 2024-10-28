@@ -1,0 +1,40 @@
+networks:
+  mongodb_serve:
+    external: True
+
+services:
+  serve:
+    image: ${IMAGE_TAG}
+    pull_policy: never
+    hostname: ${SYSTEM_NAME}
+
+    networks:
+      - ${MONGODB_NETWORK}
+
+    ports:
+      - ${MONGODB_PORT}:${MONGODB_PORT}
+
+    # environment:
+    #  - MONGO_INITDB_ROOT_USERNAME=root
+    #  - MONGO_INITDB_ROOT_PASSWORD=password
+
+    volumes:
+      - ${MONGODB_DATA_PATH}:/data/db
+
+    # TODO:
+    # - this causes an error
+    # - localhost is not a valid IP for replica sets
+    # - not getting the correct hostname
+    # - need to change the --replSet somehow to use the ${SYSTEM_NAME} hostname
+    # - not sure if this is possible => more importantly isn't needed if we aren't using the watch features anyways
+    # mongodb => make local single node replica sets to enable watch function
+    # - this is needed to be able to watch changes to mongo objects
+    # command: mongod --replSet rs0
+
+    # healthcheck:
+    #   test: |
+    #     mongosh --eval "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '${SYSTEM_NAME}:27017' }] }).ok }"
+    #   start_period: 0s
+    #   interval: 500ms
+    #   timeout: 5s
+    #   retries: 5

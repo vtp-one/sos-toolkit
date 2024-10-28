@@ -1,0 +1,196 @@
+meta:
+  sos_version: v0.0.1
+  system_name: sos-chromadb
+  system_version: v0.0.1
+  system_internal: service/sos_chromadb
+  platform: default
+
+namespace:
+  image_tag: ${service.chromadb.meta.system_name}/${service.chromadb.meta.platform}:${service.chromadb.meta.system_version}
+  setup: False
+  runtime_name: ${service.chromadb.meta.system_name}
+  project_name: ${service.chromadb.meta.system_name}
+  network_name: chromadb_serve
+  data_dir: /tmp/chromadb_data
+  protocol: chromadb
+  host: 0.0.0.0
+  port: "8000"
+
+action:
+  setup:
+    image_exists:
+      tool: docker.image_exists
+      context_map:
+        - label: get image tag
+          result: target
+          data: service.chromadb.namespace.image_tag
+      result_map:
+        - label: set image exists result
+          result: service.chromadb.namespace.setup
+          data: result
+
+    break:
+      tool: context.runtime_break
+      params:
+        info_pass: CHROMADB_SETUP BUILDER RUNNING
+        info_break: CHROMADB_SETUP BUILDER SKIPPED
+        resolve:
+          - label: if chromadb setup
+            ctx_key: service.chromadb.namespace.setup
+            valid: True
+            comparison: equal
+            raise_exc: False
+        qualifier: all
+
+    build:
+      label: chromadb builder
+      tool: docker.buildx_bake
+      params:
+        bake_file: bakefile.hcl
+        bake_target: default
+      context_map:
+        - label: get version
+          result: version
+          data: service.chromadb.meta.system_version
+        - label: get platform
+          result: platform
+          data: service.chromadb.meta.platform
+        - label: build context_dir
+          result: context_dir
+          data:
+            - source: service.chromadb.meta.system_path
+              target: system_dir
+            - source: null
+              target: platform_dir
+              default: platform
+            - source: service.chromadb.meta.platform
+              target: platform
+            - source: null
+              target: builder_dir
+              default: builder
+          path_join: True
+        - label: get namespace
+          result: namespace
+          data: service.chromadb.meta.system_name
+
+    setup_complete:
+      tool: context.ctx_set
+      params:
+        obj: True
+        ctx_key: service.chromadb.namespace.setup
+        overwrite: True
+
+  plugin:
+    install:
+      tool: context.tool_module
+      context_map:
+        - label: plugin_path
+          result: target
+          data:
+            - target: root_path
+              source: service.chromadb.meta.system_path
+            - target: plugin_path
+              source: null
+              default: chromadb
+          path_join: True
+
+  up:
+    container_exists:
+      label: check if the chromadb container already exists
+      tool: docker.container_exists
+      disabled: True
+
+    create_network:
+      label: create chromadb network
+      tool: docker.network_create
+      context_map:
+        - label: get network name
+          result: name
+          data: service.chromadb.namespace.network_name
+
+    compose:
+      tool: docker.compose_up
+      params:
+        profile: default
+      context_map:
+        - label: generate compose file target
+          result: file
+          data:
+            - source: service.chromadb.meta.system_path
+              target: system_dir
+            - source: null
+              target: platform_dir
+              default: platform
+            - source: service.chromadb.meta.platform
+              target: platform
+            - source: null
+              target: compose_file
+              default: docker-compose.yaml
+          path_join: True
+        - label: get project name
+          result: project_name
+          data: service.chromadb.namespace.project_name
+        - label: generate env_map
+          result: env_map
+          data:
+            - target: SYSTEM_NAME
+              source: service.chromadb.namespace.runtime_name
+            - target: IMAGE_TAG
+              source: service.chromadb.namespace.image_tag
+            - target: CHROMADB_NETWORK
+              source: service.chromadb.namespace.network_name
+            - target: CHROMADB_HOST
+              source: service.chromadb.namespace.host
+            - target: CHROMADB_PORT
+              source: service.chromadb.namespace.port
+            - target: CHROMADB_DATA_PATH
+              source: service.chromadb.namespace.data_dir
+
+    base_url:
+      label: generate chromadb base base_url
+      tool: context.ctx_set
+      params:
+        ctx_key: service.chromadb.namespace.base_url
+        overwrite: True
+      context_map:
+        - label: generate url
+          result: obj
+          data:
+            - target: protocol
+              source: service.chromadb.namespace.protocol
+            - target: host
+              source: service.chromadb.namespace.runtime_name
+            - target: port
+              source: service.chromadb.namespace.port
+          format_string: "{protocol}://{host}:{port}"
+
+    service_address:
+      tool: terminal.print_object
+      params:
+        horizontal_rule: True
+      context_map:
+        - label: generate service address
+          result: obj
+          data:
+            - source: null
+              target: preamble
+              default: "CHROMADB RUNNING ON:"
+            - source: service.chromadb.namespace.base_url
+              target: target
+          format_string: "{preamble} {target}"
+
+  down:
+    compose:
+      tool: docker.compose_down
+      context_map:
+        - label: get project name
+          result: project_name
+          data: service.chromadb.namespace.project_name
+
+    remove_network:
+      label: remove chromadb serve network
+      tool: docker.network_remove
+      context_map:
+        - label: get network name
+          result: name
+          data: service.chromadb.namespace.network_name

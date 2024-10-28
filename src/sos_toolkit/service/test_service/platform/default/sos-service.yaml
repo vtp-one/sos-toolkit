@@ -1,0 +1,10 @@
+meta:
+  sos_version: v0.0.1
+  system_name: test_service
+  system_version: v0.0.1
+  system_internal: service/test_service
+  platform: default
+
+namespace: null
+
+action: null

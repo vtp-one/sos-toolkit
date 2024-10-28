@@ -1,0 +1,69 @@
+meta:
+  sos_version: v0.0.1
+  system_name: dev_mode
+  system_version: v0.0.1
+  system_internal: service/dev_mode
+  platform: default
+
+namespace:
+  condition:
+    label: Dev Profile Enabled
+    comparison: equal
+    ctx_key: meta.profile
+    valid: dev
+    raise_exc: False
+  condition_exc:
+    label: Dev Profile Enabled
+    comparison: equal
+    ctx_key: meta.profile
+    valid: dev
+    raise_exc: True
+
+action:
+  enable:
+    label: dev_mode enable
+    tool: context.ctx_set
+    params:
+      ctx_key: meta.profile
+      obj: dev
+      overwrite: True
+
+  disable:
+    label: dev_mode disable
+    tool: context.ctx_set
+    params:
+      ctx_key: meta.profile
+      obj: default
+      overwrite: True
+
+  is_enabled:
+    label: dev_mod is_enabled
+    tool: context.ctx_flag
+    params:
+      condition:
+        - ${service.dev_mode.namespace.condition}
+
+  is_enabled_exc:
+    label: dev_mode is_enabled_exc
+    tool: context.ctx_flag
+    params:
+      condition:
+        - ${service.dev_mode.namespace.condition_exc}
+
+  dev_breakpoint:
+    label: dev_breakpoint
+    tool: context.runtime_breakpoint
+    condition:
+      - label: Dev Profile Enabled
+        comparison: equal
+        ctx_key: meta.profile
+        valid: dev
+        raise_exc: False
+    params:
+      label: dev_breakpoint
+
+  force_breakpoint:
+    label: force_breakpoint
+    tool: context.runtime_breakpoint
+    params:
+      label: force_breakpoint

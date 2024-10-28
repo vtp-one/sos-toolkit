@@ -1,0 +1,228 @@
+meta:
+  sos_version: v0.0.1
+  system_name: sos-ollama
+  system_version: v0.0.1
+  system_internal: service/sos_ollama
+  platform: default
+
+namespace:
+  image_tag: ${service.ollama.meta.system_name}/${service.ollama.meta.platform}:${service.ollama.meta.system_version}
+  docker_file: Dockerfile
+  setup: False
+
+  runtime_name: ${service.ollama.meta.system_name}
+  project_name: ${service.ollama.meta.system_name}
+  network_name: ollama_serve
+  model_dir: /tmp/ollama_data
+  protocol: http
+  host: 0.0.0.0
+  port: "11434"
+  base_url: null
+
+  run_env:
+    OLLAMA_MAX_LOADED_MODELS: 4
+    OLLAMA_NUM_PARALLEL: 4
+    OLLAMA_MAX_QUEUE: 20
+    OLLAMA_NOPRUNE: True
+    OLLAMA_KEEP_ALIVE: -1
+    OLLAMA_LLAMA_EXTRA_ARGS: --fa
+
+action:
+  setup:
+    image_exists:
+      label: check if ollama image exists
+      tool: docker.image_exists
+      context_map:
+        - label: get image tag
+          result: target
+          data: service.ollama.namespace.image_tag
+      result_map:
+        - label: set image exists result
+          result: service.ollama.namespace.setup
+          data: result
+
+    break:
+      label: context break
+      tool: context.runtime_break
+      params:
+        info_pass: OLLAMA_SETUP BUILDER RUNNING
+        info_break: OLLAMA_SETUP BUILDER SKIPPED
+        resolve:
+          - label: if ollama setup
+            ctx_key: service.ollama.namespace.setup
+            valid: True
+            comparison: equal
+            raise_exc: False
+        qualifier: all
+
+    build:
+      label: ollama builder
+      tool: docker.buildx_build
+      params:
+        docker_file: Dockerfile
+      context_map:
+        - label: get dockerfile target
+          result: docker_file
+          data: service.ollama.namespace.docker_file
+        - label: get version
+          result: version
+          data: service.ollama.meta.system_version
+        - label: get platform
+          result: platform
+          data: service.ollama.meta.platform
+        - label: build context_dir
+          result: context_dir
+          data:
+            - source: service.ollama.meta.system_path
+              target: system_dir
+            - source: null
+              target: platform_dir
+              default: platform
+            - source: service.ollama.meta.platform
+              target: platform
+            - source: null
+              target: builder_dir
+              default: builder
+          path_join: True
+        - label: get tags
+          result: tags
+          data: service.ollama.namespace.image_tag
+      callbacks:
+        - label: setup_complete
+          tool: context.ctx_set
+          params:
+            obj: True
+            ctx_key: service.ollama.namespace.setup
+            overwrite: True
+
+  plugin:
+    install:
+      label: ollama plugin install
+      tool: context.tool_module
+      context_map:
+        - label: ollama_plugin_path
+          result: target
+          data:
+            - target: ollama_path
+              source: service.ollama.meta.system_path
+            - target: ollama_plugin
+              source: null
+              default: ollama
+          path_join: True
+
+  up:
+    container_exists:
+      label: check if the ollama container already exists
+      tool: docker.container_exists
+      disabled: True
+
+    create_network:
+      label: create ollama serve network
+      tool: docker.network_create
+      context_map:
+        - label: get network name
+          result: name
+          data: service.ollama.namespace.network_name
+
+    compose:
+      label: ollama compose up
+      tool: docker.compose_up
+      params:
+        profile: default
+      context_map:
+        - label: generate compose file target
+          result: file
+          data:
+            - source: service.ollama.meta.system_path
+              target: system_dir
+            - source: null
+              target: platform_dir
+              default: platform
+            - source: service.ollama.meta.platform
+              target: platform
+            - source: null
+              target: compose_file
+              default: docker-compose.yaml
+          path_join: True
+        - label: get project name
+          result: project_name
+          data: service.ollama.namespace.project_name
+        - label: generate env_map
+          result: env_map
+          data:
+            - target: SYSTEM_NAME
+              source: service.ollama.namespace.runtime_name
+            - target: IMAGE_TAG
+              source: service.ollama.namespace.image_tag
+            - target: OLLAMA_NETWORK
+              source: service.ollama.namespace.network_name
+            - target: OLLAMA_HOST
+              source: service.ollama.namespace.host
+            - target: OLLAMA_PORT
+              source: service.ollama.namespace.port
+            - target: OLLAMA_DATA_PATH
+              source: service.ollama.namespace.model_dir
+            - target: OLLAMA_MAX_LOADED_MODELS
+              source: service.ollama.namespace.run_env.OLLAMA_MAX_LOADED_MODELS
+            - target: OLLAMA_NUM_PARALLEL
+              source: service.ollama.namespace.run_env.OLLAMA_NUM_PARALLEL
+            - target: OLLAMA_MAX_QUEUE
+              source: service.ollama.namespace.run_env.OLLAMA_MAX_QUEUE
+            - target: OLLAMA_NOPRUNE
+              source: service.ollama.namespace.run_env.OLLAMA_NOPRUNE
+            - target: OLLAMA_KEEP_ALIVE
+              source: service.ollama.namespace.run_env.OLLAMA_KEEP_ALIVE
+            - target: OLLAMA_LLAMA_EXTRA_ARGS
+              source: service.ollama.namespace.run_env.OLLAMA_LLAMA_EXTRA_ARGS
+
+
+    base_url:
+      label: generate ollama base base_url
+      tool: context.ctx_set
+      params:
+        ctx_key: service.ollama.namespace.base_url
+        overwrite: True
+      context_map:
+        - label: generate url
+          result: obj
+          data:
+            - target: protocol
+              source: service.ollama.namespace.protocol
+            - target: host
+              source: service.ollama.namespace.runtime_name
+            - target: port
+              source: service.ollama.namespace.port
+          format_string: "{protocol}://{host}:{port}"
+
+    service_address:
+      label: ollama print service address
+      tool: terminal.print_object
+      params:
+        horizontal_rule: True
+      context_map:
+        - label: generate service address
+          result: obj
+          data:
+            - source: null
+              target: preamble
+              default: "OLLAMA RUNNING ON:"
+            - source: service.ollama.namespace.base_url
+              target: target
+          format_string: "{preamble} {target}"
+
+  down:
+    compose:
+      label: ollama compose down
+      tool: docker.compose_down
+      context_map:
+        - label: get project name
+          result: project_name
+          data: service.ollama.namespace.project_name
+
+    remove_network:
+      label: remove ollama serve network
+      tool: docker.network_remove
+      context_map:
+        - label: get network name
+          result: name
+          data: service.ollama.namespace.network_name

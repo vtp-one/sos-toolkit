@@ -1,0 +1,1 @@
+FROM dustynv/ollama:r36.3.0 as backend-runtime
