@@ -11,7 +11,7 @@ SOS stands for System of Systems, and the goal of SOS-Toolkit is to provide the 
 
 # Current Release Target
 ```
-v0.0.1
+v0.0.2
 ```
 
 
@@ -127,7 +127,7 @@ A system built to operate with SOS-Toolkit v0.0.1 should always work by changing
 ```
 $ git clone https://github.com/vtp-one/sos-toolkit.git
 $ cd sos-toolkit
-$ git checkout v0.0.1
+$ git checkout v0.0.2
 ```
 Future versions of SOS-Toolkit will handle different versions automatically and this will include handling potential dependency issues as well.
 
