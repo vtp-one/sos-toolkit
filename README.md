@@ -4,7 +4,7 @@ Develop, package, and distribute local Digital Intelligence.
 
 SOS stands for System of Systems, and the goal of SOS-Toolkit is to provide the tools needed to create and use Digital Intelligence Systems.
 
- - Simple Description: Better makefiles with Python
+ - Simple Description: Intelligent makefiles with Python
  - Functional Description: Wrapper for git, docker, or any other Python module to manage backend services and runtime configuration
  - Ambitious Description: Dynamically modifiable glue code for polymorphic digital intelligence
 
