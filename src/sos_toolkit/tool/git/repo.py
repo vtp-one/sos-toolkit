@@ -68,8 +68,17 @@ def repo_status(
     cur_hash = repo.head.object.hexsha
     origin = repo.remotes.origin
     origin.fetch()
-    new_hash = origin.refs[repo.active_branch.name].object.hexsha
-    is_behind = cur_hash != new_hash
+
+    try:
+        new_hash = origin.refs[repo.active_branch.name].object.hexsha
+        is_behind = cur_hash != new_hash
+        is_head = False
+
+    except:
+        # TODO
+        # - this should only catch the detatched head error not all errors
+        is_behind = False
+        is_head = True
 
     state = ["REPO"]
 
@@ -80,7 +89,10 @@ def repo_status(
     else:
         state.append("[bold green]|CLEAN|[/bold green]")
 
-    if is_behind:
+    if is_head:
+        state.append("[bold yellow]|DETACHED|[/bold yellow]")
+
+    elif is_behind:
         state.append("[bold red]|DESYNC|[/bold red]")
 
     else:
@@ -111,11 +123,24 @@ def repo_commit(
     cur_hash = repo.head.object.hexsha
     origin = repo.remotes.origin
     origin.fetch()
-    new_hash = origin.refs[repo.active_branch.name].object.hexsha
-    is_behind = cur_hash != new_hash
+
+    try:
+        new_hash = origin.refs[repo.active_branch.name].object.hexsha
+        is_behind = cur_hash != new_hash
+        is_head = False
+
+    except:
+        # TODO
+        # - this should only catch the detatched head error not all errors
+        is_behind = False
+        is_head = True
 
     rich.print(rich.rule.Rule())
-    if is_behind:
+    if is_head:
+        rich.print(f"[bold red]REPO IS DETATCHED:[/bold red] {working_dir}")
+        rich.print(f"[bold red]NEEDS TO BE MANUALLY FIXED[/bold red]")
+
+    elif is_behind:
         rich.print(f"[bold red]REPO OUT OF SYNC:[/bold red] {working_dir}")
         rich.print(f"[bold red]NEEDS TO BE MANUALLY FIXED[/bold red]")
 

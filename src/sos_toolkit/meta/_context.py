@@ -604,6 +604,9 @@ class SOSContext(ModelGet):
                 toolkit = __version__.split("v")[-1]
                 _system = system.split("v")[-1]
 
+            """
+            # TODO
+            # - enable version checking
             if _system != toolkit:
                 e = f"SYSTEM_VERSION MISMATCH - system_version: {system} - sos-toolkit_version: {__version__}"
                 if ignore_version:
@@ -611,6 +614,7 @@ class SOSContext(ModelGet):
 
                 else:
                     raise RuntimeError(e)
+            """
 
 
     @staticmethod
