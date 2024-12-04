@@ -157,11 +157,9 @@ This command will allow you to see if SOS-Toolkit is installed correctly.
 ```
 It should print something like this:
 ```
-SOS_TOOLKIT CLI TEST - version: v0.0.1
+SOS_TOOLKIT CLI TEST - version: v0.0.2
 ```
 Not seeing that message means there was something wrong with your installation.
-
-Any additional output with that message is a bug that should be reported.
 
 
 ### 5. SOS-Toolkit Help
